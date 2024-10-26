@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Dostonlv/kv/internal/domain/models"
+	"github.com/Dostonlv/kv/pkg/errorskv"
 )
 
 type MemoryDB struct {
@@ -33,4 +34,26 @@ func (db *MemoryDB) Set(key string, value interface{}, ttl time.Duration) error 
 		ExpiresAt: expiresAt,
 	}
 	return nil
+}
+
+func (db *MemoryDB) Get(key string) (interface{}, error) {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	value, exists := db.data[key]
+	if !exists {
+		return nil, errorskv.ErrKeyNotFound
+	}
+	if !value.ExpiresAt.IsZero() && time.Now().After(value.ExpiresAt) {
+
+		db.mu.RUnlock()
+		db.mu.Lock()
+		delete(db.data, key)
+		db.mu.Unlock()
+		db.mu.RLock()
+
+		return nil, errorskv.ErrKeyExpired
+	}
+
+	return value.Data, nil
 }
