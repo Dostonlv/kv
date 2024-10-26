@@ -5,15 +5,17 @@ import (
 	"time"
 
 	// "github.com/Dostonlv/kv/internal/config"
+	"github.com/Dostonlv/kv/internal/logger"
 	"github.com/Dostonlv/kv/internal/repository/memory"
 	"github.com/Dostonlv/kv/internal/service"
 )
 
 func main() {
 	// cfg := config.NewDefaultConfig()
+	logger := logger.NewLogger()
 
 	// Create repository
-	db := memory.NewMemoryDB()
+	db := memory.NewMemoryDB(logger)
 
 	// Create service
 	kvService := service.NewKVService(db)
