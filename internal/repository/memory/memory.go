@@ -21,6 +21,7 @@ func NewMemoryDB(logger *logger.Logger) *MemoryDB {
 		data:   make(map[string]models.Value),
 		logger: logger,
 	}
+	go db.cleanupLoop()
 	return db
 }
 
@@ -61,4 +62,19 @@ func (db *MemoryDB) Get(key string) (interface{}, error) {
 	}
 
 	return value.Data, nil
+}
+
+// clean up expired keys
+func (db *MemoryDB) cleanupLoop() {
+	ticker := time.NewTicker(time.Second)
+	for range ticker.C {
+		db.mu.Lock()
+		for k, v := range db.data {
+			if !v.ExpiresAt.IsZero() && time.Now().After(v.ExpiresAt) {
+				delete(db.data, k)
+				db.logger.Info.Printf("Expired key removed: %s", k)
+			}
+		}
+		db.mu.Unlock()
+	}
 }
