@@ -23,3 +23,19 @@ func (s *KVService) Set(key string, value interface{}, ttl time.Duration) error 
 func (s *KVService) Get(key string) (interface{}, error) {
 	return s.repo.Get(key)
 }
+
+func (s *KVService) Delete(key string) error {
+	return s.repo.Delete(key)
+}
+
+func (s *KVService) Exists(key string) bool {
+	return s.repo.Exists(key)
+}
+
+func (s *KVService) SetTTL(key string, ttl time.Duration) error {
+	return s.repo.SetTTL(key, ttl)
+}
+
+func (s *KVService) GetTTL(key string) (time.Duration, error) {
+	return s.repo.GetTTL(key)
+}

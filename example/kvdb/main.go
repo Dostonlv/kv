@@ -25,7 +25,17 @@ func main() {
 		log.Fatal(err)
 	}
 
-	value, err := kvService.Get("key")
+	// Set a key with a value and a TTL
+	if err := kvService.SetTTL("key", time.Minute); err != nil {
+		log.Fatal(err)
+	}
+
+	value, err := kvService.Get("bb")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = kvService.Delete("aa")
 	if err != nil {
 		log.Fatal(err)
 	}

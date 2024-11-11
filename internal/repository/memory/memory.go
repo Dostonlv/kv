@@ -64,6 +64,73 @@ func (db *MemoryDB) Get(key string) (interface{}, error) {
 	return value.Data, nil
 }
 
+func (db *MemoryDB) Delete(key string) error {
+
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	if !db.Exists(key) {
+		return errorskv.ErrKeyNotFound
+	}
+
+	delete(db.data, key)
+	db.logger.Info.Println("Deleted key: " + colors.Red + key + colors.Reset)
+	return errorskv.ErrSuccessDelete
+
+}
+
+func (db *MemoryDB) Exists(key string) bool {
+
+	value, exists := db.data[key]
+	if !exists {
+		return false
+	}
+
+	if !value.ExpiresAt.IsZero() && time.Now().After(value.ExpiresAt) {
+		delete(db.data, key)
+		return false
+	}
+
+	return true
+}
+
+func (db *MemoryDB) SetTTL(key string, ttl time.Duration) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	value, exists := db.data[key]
+	if !exists {
+		return errorskv.ErrKeyNotFound
+	}
+
+	value.ExpiresAt = time.Now().Add(ttl)
+	db.data[key] = value
+
+	db.logger.Info.Printf("Updated TTL for key: %s", key)
+	return nil
+}
+func (db *MemoryDB) GetTTL(key string) (time.Duration, error) {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	value, exists := db.data[key]
+	if !exists {
+		return 0, errorskv.ErrKeyNotFound
+	}
+
+	if value.ExpiresAt.IsZero() {
+		return 0, nil
+	}
+
+	ttl := time.Until(value.ExpiresAt)
+	if ttl < 0 {
+		delete(db.data, key)
+		return 0, errorskv.ErrKeyExpired
+	}
+
+	return ttl, nil
+}
+
 // clean up expired keys
 func (db *MemoryDB) cleanupLoop() {
 	ticker := time.NewTicker(time.Second)
